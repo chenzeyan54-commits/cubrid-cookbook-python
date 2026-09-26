@@ -9,7 +9,26 @@ stage() {
   src="$1"; dst="$2"
   if [ -f "$src" ]; then
     mkdir -p "$(dirname "$dst")"
-    cp "$src" "$dst"
+    sed -e 's|\(\.\./\)*GETTING_STARTED\.md|getting-started.md|g' \
+        -e 's|\(\.\./\)*SUPPORT_MATRIX\.md|support-matrix.md|g' \
+        -e 's|\(\.\./\)*KNOWN_ISSUES\.md|known-issues.md|g' \
+        -e 's|\(\.\./\)*CHANGELOG\.md|changelog.md|g' \
+        -e 's|\(\.\./\)*fundamentals/pycubrid/README\.md|fundamentals-pycubrid.md|g' \
+        -e 's|\(\.\./\)*fundamentals/sqlalchemy/README\.md|fundamentals-sqlalchemy.md|g' \
+        -e 's|\(\.\./\)*fundamentals/pandas/README\.md|fundamentals-pandas.md|g' \
+        -e 's|\(\.\./\)*fundamentals/parameterized-queries/README\.md|fundamentals-parameterized-queries.md|g' \
+        -e 's|\(\.\./\)*fundamentals/README\.md|fundamentals.md|g' \
+        -e 's|\(\.\./\)*performance/README\.md|performance.md|g' \
+        -e 's|\(\.\./\)*pitfalls/README\.md|pitfalls.md|g' \
+        -e 's|\(\.\./\)*templates/api-service-fastapi/README\.md|template-api-service-fastapi.md|g' \
+        -e 's|\(\.\./\)*templates/async-worker/README\.md|template-async-worker.md|g' \
+        -e 's|\(\.\./\)*templates/batch-etl/README\.md|template-batch-etl.md|g' \
+        -e 's|\(\.\./\)*templates/dashboard/README\.md|template-dashboard.md|g' \
+        -e 's|\(\.\./\)*templates/django/README\.md|template-django.md|g' \
+        -e 's|\(\.\./\)*templates/flask/README\.md|template-flask.md|g' \
+        -e 's|\(\.\./\)*templates/ai-agent/README\.md|template-ai-agent.md|g' \
+        -e 's|\](\(\.\./\)*README\.md)|](catalog.md)|g' \
+        "$src" > "$dst"
   else
     echo "stage-docs: missing $src — skipping" >&2
   fi
@@ -34,3 +53,6 @@ stage templates/dashboard/README.md              docs/template-dashboard.md
 stage templates/django/README.md                 docs/template-django.md
 stage templates/flask/README.md                  docs/template-flask.md
 stage templates/ai-agent/README.md                 docs/template-ai-agent.md
+
+# Exclude internal planning pages from published site
+rm -f docs/PRD.md docs/prd.md
