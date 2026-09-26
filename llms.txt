@@ -1,6 +1,6 @@
 # CUBRID Python Cookbook
 
-> Production-ready, copy-paste friendly Python examples for the CUBRID database. Every example is verified working against a real CUBRID instance via Docker.
+> Production-ready, copy-paste friendly Python examples for the CUBRID database. Examples are verified against a real CUBRID instance via Docker.
 
 The CUBRID Python Cookbook provides runnable code examples for Python developers adopting CUBRID — from first connection to production API, with migration guides, performance patterns, and common pitfalls. All examples connect to a shared CUBRID Docker container and follow consistent patterns: connect, CRUD, transactions, and framework-specific features.
 
@@ -28,14 +28,14 @@ Core database patterns using pycubrid (DB-API 2.0) and SQLAlchemy ORM.
 - [error-handling](fundamentals/error-handling/): PEP 249 exception hierarchy, retry patterns
 - [lob-handling](fundamentals/lob-handling/): BLOB/CLOB operations via `conn.create_lob()`
 - [orm-basics](fundamentals/orm-basics/): SQLAlchemy engine, Core, ORM, relationships, reflection
-- [pycubrid](fundamentals/pycubrid/): 14 numbered pycubrid fundamentals (connect → cascade delete)
+- [pycubrid](fundamentals/pycubrid/): 22 numbered pycubrid fundamentals (connect → cascade delete, schema migration, dynamic queries)
 - [sqlalchemy](fundamentals/sqlalchemy/): Numbered SQLAlchemy ORM examples
 - [pandas](fundamentals/pandas/): Pandas data analysis with CUBRID
 
 - [async](fundamentals/async/): Async I/O with pycubrid.aio (since v1.6) and SQLAlchemy async engine
 - [alembic](fundamentals/alembic/): Programmatic Alembic migrations using the CubridImpl entry point
 - [json](fundamentals/json/): Native JSON columns with JSON_EXTRACT / JSON_UNQUOTE patterns
-- [isolation-levels](fundamentals/isolation-levels/): All 6 numeric isolation levels plus a dirty-read demonstration
+- [isolation-levels](fundamentals/isolation-levels/): CUBRID MVCC isolation levels (TRAN_REP_CLASS_REP_INSTANCE, TRAN_REP_CLASS_COMMIT_INSTANCE, TRAN_COMMIT_CLASS_COMMIT_INSTANCE); READ UNCOMMITTED is rejected and dirty reads are prevented
 
 ## Migration Guide
 
@@ -45,6 +45,7 @@ Core database patterns using pycubrid (DB-API 2.0) and SQLAlchemy ORM.
 
 Copy-and-customize production starters:
 
+- [ai-agent](templates/ai-agent/): AI agent integration patterns with CUBRID tools and memory stores
 - [api-service-fastapi](templates/api-service-fastapi/): REST API with FastAPI, SQLAlchemy, Docker, 12 advanced recipes (saga, CQRS, rate limiter, etc.)
 - [flask](templates/flask/): Flask + Flask-SQLAlchemy with 11 progressive examples (basic CRUD → workflow engine)
 - [django](templates/django/): Django project using CUBRID via SQLAlchemy bridge
