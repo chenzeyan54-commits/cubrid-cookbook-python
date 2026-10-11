@@ -34,10 +34,6 @@ body:
         - Python — Pandas
         - Python — Celery
         - Python — Streamlit
-        - Node.js — cubrid-client
-        - Node.js — Drizzle ORM
-        - Go — cubrid-go
-        - Go — GORM
         - Other
     validations:
       required: true
@@ -87,7 +83,7 @@ body:
       label: Environment
       description: Provide details about your environment
       placeholder: |
-        - Language version: Python 3.12 / Node.js 22 / Go 1.22
+        - Python version: 3.12
         - CUBRID version: 11.2
         - Operating System: Linux/macOS/Windows
     validations:
