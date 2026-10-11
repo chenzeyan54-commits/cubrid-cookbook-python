@@ -89,8 +89,13 @@ def _validator() -> str:
     return textwrap.dedent(text[line_start:stop])
 
 
-def _run(title: str) -> subprocess.CompletedProcess[str]:
-    env = {**os.environ, "PR_TITLE": title}
+def _run(title: str, body: str = "") -> subprocess.CompletedProcess[str]:
+    env = {
+        **os.environ,
+        "PR_TITLE": title,
+        "PR_BODY": body,
+        "GITHUB_REPOSITORY": "cubrid-lab/cubrid-cookbook-python",
+    }
     return subprocess.run(
         [sys.executable, "-c", _validator()],
         capture_output=True,
@@ -142,6 +147,7 @@ class PrTitleValidatorTest(unittest.TestCase):
         self.assertIn("\npermissions: {}\n", text)
         self.assertNotIn("actions/checkout", text)
         self.assertIn("PR_TITLE: ${{ github.event.pull_request.title }}", text)
+        self.assertIn("PR_BODY: ${{ github.event.pull_request.body }}", text)
         self.assertRegex(text, r"\n    name: PR title\n")
         run_block = text.split("run: |", 1)[1]
         self.assertNotIn("${{", run_block)
@@ -151,6 +157,53 @@ class PrTitleValidatorTest(unittest.TestCase):
         self.assertIsNotNone(match)
         assert match is not None
         self.assertEqual(tuple(re.findall(r'"([a-z]+)"', match[1])), TYPES)
+
+    def test_foreign_repository_closing_keywords_fail(self) -> None:
+        for body in (
+            "Closes cubrid-lab/pycubrid#833.",
+            "Fixes https://github.com/cubrid-lab/sqlalchemy-cubrid/issues/810",
+            "Resolves another-org/another-repo#42",
+            "Fixes: another-org/another-repo#42",
+            "Closes http://github.com/another-org/another-repo/issues/42",
+            "Summary text\n    Closes another-org/another-repo#42",
+            "- Item\n    - Closes another-org/another-repo#42",
+            "    Closes another-org/another-repo#42",
+            f"{chr(96) * 3}\n<!--\n{chr(96) * 3}\nCloses another-org/another-repo#42\n-->",
+            f"{chr(96) * 3} a{chr(96)}b\nCloses another-org/another-repo#42",
+            f"<!--\n{chr(96) * 3}\n-->\nCloses another-org/another-repo#42",
+            f"- a\n  {chr(96) * 3}\n  code\nCloses another-org/another-repo#42\n{chr(96) * 3}",
+            "<!-- a --> <!-- b\nCloses another-org/another-repo#42\n-->",
+        ):
+            with self.subTest(body=body):
+                result = _run("docs: align issue ownership", body)
+                self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+                self.assertIn("Cross-repository issue closure", result.stdout)
+
+    def test_local_closures_and_foreign_refs_pass(self) -> None:
+        for body in (
+            "Closes #240. Refs cubrid-lab/pycubrid#833.",
+            "Closes cubrid-lab/cubrid-cookbook-python#240",
+            "Closes https://github.com/cubrid-lab/cubrid-cookbook-python/issues/240",
+            "Refs #223 and cubrid-lab/pycubrid#815.",
+            "<!-- Closes another-org/another-repo#42 -->",
+            "<!-- Use Closes #N.\n     Closes another-org/another-repo#42 -->\nCloses #240",
+            f"{chr(96) * 3}markdown\nCloses another-org/another-repo#42\n{chr(96) * 3}",
+            f"{chr(96) * 4}markdown\nCloses another-org/another-repo#42\n{chr(96) * 5}",
+            "~~~~yaml\nCloses another-org/another-repo#42\n~~~~~",
+            f"{chr(96) * 4}md\nCloses another-org/another-repo#42\n~~~\nCloses another-org/another-repo#43\n{chr(96) * 4}",
+        ):
+            with self.subTest(body=body):
+                result = _run("docs: align issue ownership", body)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_foreign_closure_after_long_fence_is_rejected(self) -> None:
+        body = (
+            f"{chr(96) * 4}markdown\nCloses another-org/another-repo#42\n{chr(96) * 4}\n"
+            "Closes another-org/another-repo#43"
+        )
+        result = _run("docs: align issue ownership", body)
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("Cross-repository issue closure", result.stdout)
 
 
 if __name__ == "__main__":

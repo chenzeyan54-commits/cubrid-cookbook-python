@@ -4,8 +4,9 @@ name: PR title
 # commit titles"). The PR title becomes the squash commit title on main.
 #
 # Security: runs on `pull_request` (never `pull_request_target`), requests no
-# token permissions, checks out nothing and receives the title only through an
-# environment variable, so no PR-controlled code or string is executed.
+# token permissions, checks out nothing and receives the title and body only
+# through environment variables, so no PR-controlled code or string is executed.
+# Also rejects accidental foreign-issue closing keywords in inert PR body data.
 # The job name "PR title" is the required-status-check context; keep it stable.
 
 on:
@@ -27,6 +28,7 @@ jobs:
       - name: Check PR title
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
         run: |
           python3 - <<'PY'
           # BEGIN pr-title-validator
@@ -93,6 +95,71 @@ jobs:
               errors.append("Do not mark work in progress in the title; open a draft PR.")
           if any(ch.isalpha() and not ch.isascii() for ch in title):
               errors.append("Write the title in English (ASCII letters only).")
+
+
+          # BEGIN cross-repo-closing-guard
+          # No checkout or execution of untrusted PR-body text is needed.
+          def strip_inert_markdown(text: str) -> str:
+              # One scan over fenced code and HTML comments, so a marker inside one
+              # cannot hide live text in the other. Anything uncertain (indented
+              # lines, inline comments that span lines) stays live: a false positive
+              # only asks for a body edit, a false negative closes a foreign issue.
+              output = []
+              fence_char = None
+              fence_size = 0
+              fence_indent = 0
+              in_comment = False
+              for line in text.splitlines(keepends=True):
+                  stripped = line.lstrip(" ")
+                  indent = len(line) - len(stripped)
+                  if in_comment:
+                      if "-->" in line:
+                          in_comment = False
+                          output.append(line.split("-->", 1)[1])
+                      continue
+                  delimiter = re.match(r"(?:\x60{3,}|~{3,})", stripped) if indent <= 3 else None
+                  if fence_char is not None:
+                      if (
+                          delimiter is not None
+                          and delimiter.group()[0] == fence_char
+                          and len(delimiter.group()) >= fence_size
+                          and not stripped[len(delimiter.group()):].strip()
+                      ):
+                          fence_char = None
+                          continue
+                      if not (fence_indent and stripped.strip() and indent < fence_indent):
+                          continue
+                      fence_char = None  # A less indented line ends the list item and fence.
+                  if delimiter is not None and not (
+                      delimiter.group()[0] == "\x60" and "\x60" in stripped[len(delimiter.group()):]
+                  ):
+                      fence_char, fence_size = delimiter.group()[0], len(delimiter.group())
+                      fence_indent = indent
+                      continue
+                  starts_comment = indent <= 3 and stripped.startswith("<!--") and "-->" not in line
+                  line = re.sub(r"<!--.*?-->", "", line)
+                  if starts_comment:
+                      in_comment = True
+                      line = line.split("<!--", 1)[0]
+                  output.append(line)
+              return "".join(output)
+
+          body = strip_inert_markdown(os.environ.get("PR_BODY", ""))
+          close_ref = re.compile(
+              r"(?i)\b(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved):?\s+"
+              r"(?:https?://(?:www\.)?github\.com/)?"
+              r"(?P<owner>[a-z0-9][a-z0-9-]*)/(?P<repo>[a-z0-9_.-]+)"
+              r"(?:#|/issues/)(?P<number>[1-9][0-9]*)\b"
+          )
+          local_repo = os.environ.get("GITHUB_REPOSITORY", "").lower()
+          for match in close_ref.finditer(body):
+              target = f"{match['owner']}/{match['repo']}".lower()
+              if target != local_repo:
+                  errors.append(
+                      f"Cross-repository issue closure {match.group()!r} is forbidden; "
+                      f"use 'Refs {target}#{match['number']}' and let its own repo close it."
+                  )
+          # END cross-repo-closing-guard
 
           for message in warnings:
               print(f"::warning title=PR title::{message}")
