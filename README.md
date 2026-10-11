@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![CUBRID 11.2 | 11.4](https://img.shields.io/badge/CUBRID-11.2%20%7C%2011.4-green.svg)](SUPPORT_MATRIX.md)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 ![pycubrid](https://img.shields.io/badge/pycubrid-%E2%89%A51.6.1-blue)
 ![sqlalchemy-cubrid](https://img.shields.io/badge/sqlalchemy--cubrid-%E2%89%A51.0-blue)
 ![status](https://img.shields.io/badge/status-active%20development-yellow)
@@ -32,11 +32,15 @@ Get a working CUBRID + FastAPI app running with Docker in under 5 minutes.
 
 ```bash
 cd quickstart/5min-fastapi
-docker compose up -d
+docker compose up -d --wait cubrid
 pip install -r requirements.txt
 uvicorn app:app --reload
 # Open http://localhost:8000/docs
 ```
+
+The host-run API connects to `localhost` by default (`CUBRID_HOST` overrides it).
+To run both the API and database in Docker instead, use `docker compose up -d --build`
+in that directory; Compose sets `CUBRID_HOST=cubrid` for the API.
 
 ### Migration Guide
 
@@ -52,10 +56,10 @@ Copy-and-customize starting points for real applications:
 |----------|----------|
 | [`api-service-fastapi/`](templates/api-service-fastapi/) | REST API with FastAPI, SQLAlchemy, Docker (12 recipes) |
 | [`flask/`](templates/flask/) | Flask + Flask-SQLAlchemy patterns (11 recipes) |
-| [`django/`](templates/django/) | Minimal Django app on CUBRID |
+| [`django/`](templates/django/) | Django request handling with a live-tested SQLAlchemy/CUBRID bridge (not native Django ORM) |
 | [`async-worker/`](templates/async-worker/) | Background task processing with Celery |
 | [`batch-etl/`](templates/batch-etl/) | Data pipeline with Pandas |
-| [`ai-agent/`](templates/ai-agent/) | AI agent state store + MCP toolchain + RAG metadata |
+| [`ai-agent/`](templates/ai-agent/) | AI agent state store + MCP toolchain + RAG metadata (5 live-tested scripts) |
 | [`dashboard/`](templates/dashboard/) | Interactive dashboard with Streamlit |
 
 ### Performance
@@ -64,13 +68,13 @@ Benchmark-backed optimization patterns:
 
 | Pattern | Impact |
 |---------|--------|
-| [Fetch optimization](performance/fetch-optimization/) | SELECT 10K rows: 96ms → 78ms (−19%) |
-| [Bulk insert](performance/bulk-insert/) | COMMIT is 7× costlier than INSERT — batch your writes |
-| [Connection pooling](performance/connection-pooling/) | Reuse connections to avoid 1.7ms/connect overhead |
+| [Fetch optimization](performance/fetch-optimization/) | `fetchall()` vs `fetchone()`, column selection and server-side pagination |
+| [Bulk insert](performance/bulk-insert/) | batch your COMMITs (~28 → ~1,279 rows/s, pycubrid 1.10.0) |
+| [Connection pooling](performance/connection-pooling/) | reuse connections (~5.9 ms vs ~0.8 ms per query, pycubrid 1.10.0) |
 
 ### Pitfalls
 
-7 common anti-patterns that cause real production issues — reserved words, auto-commit differences, connection leaks, and more. See [`pitfalls/`](pitfalls/).
+7 common anti-patterns that cause real production issues — reserved words, auto-commit differences, connection leaks, and more. See [`pitfalls/`](pitfalls/). The reserved-word advice is checked against a live server by [`pitfalls/reserved-words/`](pitfalls/reserved-words/).
 
 ### Fundamentals
 
@@ -78,12 +82,12 @@ Step-by-step reference for every core operation:
 
 | Topic | File |
 |-------|------|
-| [Connecting](fundamentals/connect/) | Basic connection, metadata, context managers |
-| [CRUD](fundamentals/crud/) | INSERT, SELECT, UPDATE, DELETE with parameters |
-| [Transactions](fundamentals/transactions/) | Commit, rollback, savepoints, auto-commit |
+| [Connecting](fundamentals/connect/) | Basic connection, metadata, context managers (redirect to `fundamentals/pycubrid/01_connect.py`) |
+| [CRUD](fundamentals/crud/) | INSERT, SELECT, UPDATE, DELETE with parameters (redirect to `fundamentals/pycubrid/02_crud.py`) |
+| [Transactions](fundamentals/transactions/) | Commit, rollback, savepoints, auto-commit (redirect to `fundamentals/pycubrid/03_transactions.py`) |
 | [Parameterized queries](fundamentals/parameterized-queries/) | Safe parameter binding (client-side, not server-side prepare) |
-| [Error handling](fundamentals/error-handling/) | Exception types, retry patterns |
-| [LOB handling](fundamentals/lob-handling/) | BLOB/CLOB operations |
+| [Error handling](fundamentals/error-handling/) | Exception types, retry patterns (`05_error_handling.py` redirects to `fundamentals/pycubrid/05_error_handling.py`) |
+| [LOB handling](fundamentals/lob-handling/) | BLOB/CLOB operations (redirect to `fundamentals/pycubrid/06_lob.py`) |
 | [ORM basics](fundamentals/orm-basics/) | SQLAlchemy engine, core, ORM, relationships |
 | [pycubrid driver](fundamentals/pycubrid/) | 22 DB-API recipes: cursors, window functions, recursive CTEs, pagination, timezone/ENUM types |
 | [SQLAlchemy recipes](fundamentals/sqlalchemy/) | 7 recipes including SET/MULTISET/SEQUENCE collection types |
@@ -99,7 +103,7 @@ Step-by-step reference for every core operation:
 
 ```
 pycubrid (DB-API 2.0 driver)
-├── Direct usage ─── fundamentals/connect, crud, transactions, pycubrid
+├── Direct usage ─── fundamentals/pycubrid (connect, crud, transactions are redirects to it)
 ├── SQLAlchemy ───── fundamentals/orm-basics, sqlalchemy, quickstart/5min-sqlalchemy
 ├── FastAPI ──────── quickstart/5min-fastapi, templates/api-service-fastapi
 ├── Flask ─────────── templates/flask
@@ -161,6 +165,7 @@ cubrid-cookbook-python/
 │   ├── bulk-insert/           # Write batching (benchmarked)
 │   └── connection-pooling/    # Pool configuration
 ├── pitfalls/                  # 7 common anti-patterns
+│   └── reserved-words/        # Live-verified reserved-word recipe
 ├── fundamentals/
 │   ├── connect/               # Connection basics
 │   ├── crud/                  # CRUD operations
@@ -182,7 +187,7 @@ cubrid-cookbook-python/
 ## Related Projects
 
 - [pycubrid](https://github.com/cubrid-lab/pycubrid) — Pure Python DB-API 2.0 driver for CUBRID
-- [sqlalchemy-cubrid](https://github.com/cubrid-lab/sqlalchemy-cubrid) — SQLAlchemy 2.0 dialect for CUBRID
+- [sqlalchemy-cubrid](https://github.com/cubrid-lab/sqlalchemy-cubrid) — SQLAlchemy 2.0/2.1 dialect for CUBRID
 - [CUBRID](https://www.cubrid.org/) — The CUBRID database
 
 ## Roadmap
@@ -194,6 +199,18 @@ For the ecosystem-wide view, see the [CUBRID Labs Ecosystem Roadmap](https://git
 ## Contributing
 
 PRs welcome! Each example should be self-contained and independently runnable. See [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+### First contribution
+
+New to CUBRID? Pick the repository that matches what you want to work on:
+
+- Documentation and runnable examples: [cubrid-cookbook-python](https://github.com/cubrid-lab/cubrid-cookbook-python)
+- Pure-Python driver fixes: [pycubrid](https://github.com/cubrid-lab/pycubrid)
+- SQLAlchemy dialect fixes: [sqlalchemy-cubrid](https://github.com/cubrid-lab/sqlalchemy-cubrid)
+
+Most first issues can be developed and tested with the offline checks in CONTRIBUTING.md — no Docker or CUBRID server needed. Live CUBRID verification can be completed by CI and maintainers.
+
+Browse open [`good first issue`](https://github.com/cubrid-lab/cubrid-cookbook-python/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22+no%3Aassignee) tasks.
 
 ## Disclaimer
 

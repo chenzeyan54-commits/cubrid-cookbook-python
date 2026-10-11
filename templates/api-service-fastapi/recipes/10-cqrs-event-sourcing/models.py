@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 import importlib
 
 from sqlalchemy import DateTime, Integer, String, Text, UniqueConstraint
@@ -10,8 +10,13 @@ except ImportError:
     Base = importlib.import_module("database").Base
 
 
+def naive_utc_now() -> datetime:
+    """Naive UTC timestamp; CUBRID DATETIME columns store no timezone."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
 class EventStore(Base):
-    __tablename__ = "event_store"
+    __tablename__ = "cookbook_event_store"
     __table_args__ = (
         UniqueConstraint("aggregate_id", "sequence_no", name="uq_event_store_aggregate_seq"),
     )
@@ -24,12 +29,12 @@ class EventStore(Base):
     payload_text: Mapped[str] = mapped_column(Text, nullable=False)
     metadata_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False, default=datetime.utcnow, index=True
+        DateTime, nullable=False, default=naive_utc_now, index=True
     )
 
 
 class AggregateSnapshot(Base):
-    __tablename__ = "aggregate_snapshots"
+    __tablename__ = "cookbook_aggregate_snapshots"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     aggregate_id: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, index=True)
@@ -37,14 +42,14 @@ class AggregateSnapshot(Base):
     last_sequence_no: Mapped[int] = mapped_column(Integer, nullable=False)
     state_text: Mapped[str] = mapped_column(Text, nullable=False)
     version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
-    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=naive_utc_now)
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow
+        DateTime, nullable=False, default=naive_utc_now, onupdate=naive_utc_now
     )
 
 
 class AccountReadModel(Base):
-    __tablename__ = "account_read_models"
+    __tablename__ = "cookbook_account_read_models"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     account_id: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, index=True)
@@ -53,7 +58,7 @@ class AccountReadModel(Base):
     state: Mapped[str] = mapped_column(String(32), nullable=False, default="open", index=True)
     last_sequence_no: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
-    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=naive_utc_now)
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow
+        DateTime, nullable=False, default=naive_utc_now, onupdate=naive_utc_now
     )

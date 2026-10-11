@@ -7,7 +7,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/cubrid-lab/cubrid-cookbook-python/blob/main/LICENSE)
 [![CUBRID 11.2 | 11.4](https://img.shields.io/badge/CUBRID-11.2%20%7C%2011.4-green.svg)](https://github.com/cubrid-lab/cubrid-cookbook-python/blob/main/SUPPORT_MATRIX.md)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 ![pycubrid](https://img.shields.io/badge/pycubrid-%E2%89%A51.6.1-blue)
 ![sqlalchemy-cubrid](https://img.shields.io/badge/sqlalchemy--cubrid-%E2%89%A51.0-blue)
 ![status](https://img.shields.io/badge/status-active%20development-yellow)
@@ -35,11 +35,15 @@ Docker로 CUBRID + FastAPI 앱을 5분 안에 띄웁니다.
 
 ```bash
 cd quickstart/5min-fastapi
-docker compose up -d
+docker compose up -d --wait cubrid
 pip install -r requirements.txt
 uvicorn app:app --reload
 # http://localhost:8000/docs 접속
 ```
+
+호스트에서 실행한 API는 기본적으로 `localhost`에 연결합니다 (`CUBRID_HOST`로 변경 가능).
+API와 데이터베이스를 모두 Docker에서 실행하려면 같은 디렉터리에서
+`docker compose up -d --build`를 사용하세요. Compose는 API에 `CUBRID_HOST=cubrid`를 설정합니다.
 
 ### 마이그레이션 가이드
 
@@ -55,10 +59,10 @@ Java JDBC → Python 마이그레이션을 실제 코드 나란히 비교로 제
 |--------|------|
 | [`api-service-fastapi/`](https://github.com/cubrid-lab/cubrid-cookbook-python/tree/main/templates/api-service-fastapi) | FastAPI + SQLAlchemy + Docker REST API (12개 레시피) |
 | [`flask/`](https://github.com/cubrid-lab/cubrid-cookbook-python/tree/main/templates/flask) | Flask + Flask-SQLAlchemy 패턴 (11개 레시피) |
-| [`django/`](https://github.com/cubrid-lab/cubrid-cookbook-python/tree/main/templates/django) | CUBRID 위의 최소 Django 앱 |
+| [`django/`](https://github.com/cubrid-lab/cubrid-cookbook-python/tree/main/templates/django) | Django 요청 처리 + 실DB로 검증한 SQLAlchemy/CUBRID 브리지 (네이티브 Django ORM 아님) |
 | [`async-worker/`](https://github.com/cubrid-lab/cubrid-cookbook-python/tree/main/templates/async-worker) | Celery 백그라운드 작업 처리 |
 | [`batch-etl/`](https://github.com/cubrid-lab/cubrid-cookbook-python/tree/main/templates/batch-etl) | Pandas 데이터 파이프라인 |
-| [`ai-agent/`](https://github.com/cubrid-lab/cubrid-cookbook-python/tree/main/templates/ai-agent) | AI 에이전트 상태 저장소 + MCP 도구 체인 + RAG 메타데이터 |
+| [`ai-agent/`](https://github.com/cubrid-lab/cubrid-cookbook-python/tree/main/templates/ai-agent) | AI 에이전트 상태 저장소 + MCP 도구 체인 + RAG 메타데이터 (실제 DB로 검증하는 스크립트 5개) |
 | [`dashboard/`](https://github.com/cubrid-lab/cubrid-cookbook-python/tree/main/templates/dashboard) | Streamlit 인터랙티브 대시보드 (`docker compose up` 원커맨드 데모) |
 
 ### 성능
@@ -67,13 +71,13 @@ Java JDBC → Python 마이그레이션을 실제 코드 나란히 비교로 제
 
 | 패턴 | 효과 |
 |------|------|
-| [Fetch 최적화](https://github.com/cubrid-lab/cubrid-cookbook-python/tree/main/performance/fetch-optimization) | SELECT 1만 건: 96ms → 78ms (−19%) |
-| [벌크 인서트](https://github.com/cubrid-lab/cubrid-cookbook-python/tree/main/performance/bulk-insert) | COMMIT이 INSERT보다 7배 비싸다 — 쓰기는 배치로 |
-| [커넥션 풀링](https://github.com/cubrid-lab/cubrid-cookbook-python/tree/main/performance/connection-pooling) | 연결 재사용으로 건당 1.7ms 연결 비용 제거 |
+| [Fetch 최적화](https://github.com/cubrid-lab/cubrid-cookbook-python/tree/main/performance/fetch-optimization) | `fetchall()` vs `fetchone()`, 컬럼 선택, 서버 측 페이지네이션 |
+| [벌크 인서트](https://github.com/cubrid-lab/cubrid-cookbook-python/tree/main/performance/bulk-insert) | COMMIT을 배치로 (~28 → ~1,279 rows/s, pycubrid 1.10.0) |
+| [커넥션 풀링](https://github.com/cubrid-lab/cubrid-cookbook-python/tree/main/performance/connection-pooling) | 연결 재사용 (쿼리당 ~5.9 ms vs ~0.8 ms, pycubrid 1.10.0) |
 
 ### 함정 (Pitfalls)
 
-실제 프로덕션 사고를 일으키는 7가지 반패턴 — 예약어, 오토커밋 차이, 커넥션 누수 등. [`pitfalls/`](https://github.com/cubrid-lab/cubrid-cookbook-python/tree/main/pitfalls) 참고.
+실제 프로덕션 사고를 일으키는 7가지 반패턴 — 예약어, 오토커밋 차이, 커넥션 누수 등. [`pitfalls/`](https://github.com/cubrid-lab/cubrid-cookbook-python/tree/main/pitfalls) 참고. 예약어 관련 조언은 [`pitfalls/reserved-words/`](https://github.com/cubrid-lab/cubrid-cookbook-python/tree/main/pitfalls/reserved-words)에서 실제 서버로 검증됩니다.
 
 ### 기초 (Fundamentals)
 
@@ -81,12 +85,12 @@ Java JDBC → Python 마이그레이션을 실제 코드 나란히 비교로 제
 
 | 주제 | 위치 |
 |------|------|
-| [연결](https://github.com/cubrid-lab/cubrid-cookbook-python/tree/main/fundamentals/connect) | 기본 연결, 메타데이터, 컨텍스트 매니저 |
-| [CRUD](https://github.com/cubrid-lab/cubrid-cookbook-python/tree/main/fundamentals/crud) | 파라미터를 사용한 INSERT/SELECT/UPDATE/DELETE |
-| [트랜잭션](https://github.com/cubrid-lab/cubrid-cookbook-python/tree/main/fundamentals/transactions) | 커밋, 롤백, 세이브포인트, 오토커밋 |
+| [연결](https://github.com/cubrid-lab/cubrid-cookbook-python/tree/main/fundamentals/connect) | 기본 연결, 메타데이터, 컨텍스트 매니저 (`fundamentals/pycubrid/01_connect.py`로 리다이렉트) |
+| [CRUD](https://github.com/cubrid-lab/cubrid-cookbook-python/tree/main/fundamentals/crud) | 파라미터를 사용한 INSERT/SELECT/UPDATE/DELETE (`fundamentals/pycubrid/02_crud.py`로 리다이렉트) |
+| [트랜잭션](https://github.com/cubrid-lab/cubrid-cookbook-python/tree/main/fundamentals/transactions) | 커밋, 롤백, 세이브포인트, 오토커밋 (`fundamentals/pycubrid/03_transactions.py`로 리다이렉트) |
 | [파라미터화 쿼리](https://github.com/cubrid-lab/cubrid-cookbook-python/tree/main/fundamentals/parameterized-queries) | 안전한 파라미터 바인딩 (클라이언트 측 — 서버 측 prepare 아님) |
-| [에러 처리](https://github.com/cubrid-lab/cubrid-cookbook-python/tree/main/fundamentals/error-handling) | 예외 타입, 재시도 패턴 |
-| [LOB 처리](https://github.com/cubrid-lab/cubrid-cookbook-python/tree/main/fundamentals/lob-handling) | BLOB/CLOB 연산 |
+| [에러 처리](https://github.com/cubrid-lab/cubrid-cookbook-python/tree/main/fundamentals/error-handling) | 예외 타입, 재시도 패턴 (`05_error_handling.py`는 `fundamentals/pycubrid/05_error_handling.py`로 리다이렉트) |
+| [LOB 처리](https://github.com/cubrid-lab/cubrid-cookbook-python/tree/main/fundamentals/lob-handling) | BLOB/CLOB 연산 (`fundamentals/pycubrid/06_lob.py`로 리다이렉트) |
 | [ORM 기초](https://github.com/cubrid-lab/cubrid-cookbook-python/tree/main/fundamentals/orm-basics) | SQLAlchemy 엔진, Core, ORM, 릴레이션십 |
 | [pycubrid 드라이버](https://github.com/cubrid-lab/cubrid-cookbook-python/tree/main/fundamentals/pycubrid) | 22개 DB-API 레시피: 커서, 윈도우 함수, 재귀 CTE, 페이지네이션, 타임존/ENUM |
 | [SQLAlchemy 레시피](https://github.com/cubrid-lab/cubrid-cookbook-python/tree/main/fundamentals/sqlalchemy) | SET/MULTISET/SEQUENCE 컬렉션 타입 포함 7개 |
@@ -102,7 +106,7 @@ Java JDBC → Python 마이그레이션을 실제 코드 나란히 비교로 제
 
 ```
 pycubrid (DB-API 2.0 드라이버)
-├── 직접 사용 ─────── fundamentals/connect, crud, transactions, pycubrid
+├── 직접 사용 ─────── fundamentals/pycubrid (connect, crud, transactions는 이쪽으로 리다이렉트)
 ├── SQLAlchemy ────── fundamentals/orm-basics, sqlalchemy, quickstart/5min-sqlalchemy
 ├── FastAPI ───────── quickstart/5min-fastapi, templates/api-service-fastapi
 ├── Flask ─────────── templates/flask
@@ -145,7 +149,7 @@ docker compose up -d
 ## 관련 프로젝트
 
 - [pycubrid](https://github.com/cubrid-lab/pycubrid) — CUBRID용 순수 Python DB-API 2.0 드라이버
-- [sqlalchemy-cubrid](https://github.com/cubrid-lab/sqlalchemy-cubrid) — CUBRID용 SQLAlchemy 2.0 방언
+- [sqlalchemy-cubrid](https://github.com/cubrid-lab/sqlalchemy-cubrid) — CUBRID용 SQLAlchemy 2.0/2.1 방언
 - [cubrid-mcp-server](https://github.com/cubrid-lab/cubrid-mcp-server) — LLM 클라이언트용 MCP 서버
 - [CUBRID](https://www.cubrid.org/) — CUBRID 데이터베이스
 
@@ -156,6 +160,18 @@ docker compose up -d
 ## 기여
 
 PR 환영합니다! 각 예제는 자립적으로 실행 가능해야 합니다. [`CONTRIBUTING.md`](https://github.com/cubrid-lab/cubrid-cookbook-python/blob/main/CONTRIBUTING.md) 참고.
+
+### 첫 기여
+
+CUBRID가 처음이신가요? 작업하려는 내용에 맞는 저장소를 선택하세요:
+
+- 문서와 실행 가능한 예제: [cubrid-cookbook-python](https://github.com/cubrid-lab/cubrid-cookbook-python)
+- 순수 Python 드라이버 수정: [pycubrid](https://github.com/cubrid-lab/pycubrid)
+- SQLAlchemy 방언 수정: [sqlalchemy-cubrid](https://github.com/cubrid-lab/sqlalchemy-cubrid)
+
+대부분의 첫 이슈는 CONTRIBUTING.md의 오프라인 검사만으로 개발하고 테스트할 수 있습니다 — Docker나 CUBRID 서버가 필요 없습니다. 실제 CUBRID 검증은 CI와 메인테이너가 완료할 수 있습니다.
+
+열려 있는 [`good first issue`](https://github.com/cubrid-lab/cubrid-cookbook-python/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22+no%3Aassignee) 작업을 둘러보세요.
 
 ## 고지
 

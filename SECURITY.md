@@ -1,12 +1,29 @@
 # Security Policy
 
+## Supported Versions
+
+This repository is a collection of examples and is not published as a package.
+Security fixes are applied only to `main`; tagged snapshots are not patched.
+Runtime support (Python, CUBRID and driver versions) is defined in
+[`SUPPORT_MATRIX.md`](SUPPORT_MATRIX.md).
+
 ## Reporting a Vulnerability
 
-If you discover a security issue in cubrid-cookbook examples, please report it responsibly by emailing:
+If you discover a security issue in cubrid-cookbook examples, please report it
+privately:
 
-**Email:** paikend@gmail.com
+1. **Email (preferred):** paikend@gmail.com
+2. **GitHub private vulnerability reporting:** if the repository's **Security**
+   tab shows a **Report a vulnerability** button, you can use it instead of email.
+   It is equally private.
+3. **Fallback:** if you receive no acknowledgment within the timeline below, or
+   cannot use either route, open a public issue with the **Security contact
+   request** issue form. It contains **no** vulnerability details; a maintainer
+   replies with a private channel.
 
-**Do not** open a public GitHub issue for security vulnerabilities. Responsible disclosure allows us to address the issue before public disclosure.
+**Do not** put vulnerability details in a public GitHub issue, pull request or
+discussion. Responsible disclosure allows us to address the issue before public
+disclosure.
 
 ### Response Timeline
 
@@ -42,8 +59,8 @@ When using cubrid-cookbook examples in production:
 
 Once a security vulnerability is fixed:
 
-1. A security patch will be released
-2. The vulnerability will be disclosed in release notes
+1. The fix lands on `main`
+2. The vulnerability is described in `CHANGELOG.md`
 3. Credit will be given to the reporter (if requested)
 
 We appreciate your responsible disclosure and help in keeping cubrid-cookbook secure.

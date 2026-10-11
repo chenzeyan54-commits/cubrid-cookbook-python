@@ -1,10 +1,15 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from database import db  # pyright: ignore[reportImplicitRelativeImport]
 
 
+def naive_utc_now() -> datetime:
+    """Naive UTC timestamp; CUBRID DATETIME columns store no timezone."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
 class InventoryItem(db.Model):
-    __tablename__ = "inventory_items"
+    __tablename__ = "cookbook_inventory_items"
 
     id = db.Column(db.Integer, primary_key=True)
     sku = db.Column(db.String(64), nullable=False, unique=True, index=True)
@@ -13,18 +18,20 @@ class InventoryItem(db.Model):
     reserved_qty = db.Column(db.Integer, nullable=False, default=0)
     committed_qty = db.Column(db.Integer, nullable=False, default=0)
     version = db.Column(db.Integer, nullable=False, default=1)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=naive_utc_now)
     updated_at = db.Column(
-        db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow
+        db.DateTime, nullable=False, default=naive_utc_now, onupdate=naive_utc_now
     )
 
 
 class StockReservation(db.Model):
-    __tablename__ = "stock_reservations"
+    __tablename__ = "cookbook_stock_reservations"
 
     id = db.Column(db.Integer, primary_key=True)
     reservation_key = db.Column(db.String(64), nullable=False, unique=True, index=True)
-    item_id = db.Column(db.Integer, db.ForeignKey("inventory_items.id"), nullable=False, index=True)
+    item_id = db.Column(
+        db.Integer, db.ForeignKey("cookbook_inventory_items.id"), nullable=False, index=True
+    )
     client_id = db.Column(db.String(64), nullable=False, index=True)
     quantity = db.Column(db.Integer, nullable=False)
     state = db.Column(db.String(32), nullable=False, default="active", index=True)
@@ -32,17 +39,17 @@ class StockReservation(db.Model):
     version = db.Column(db.Integer, nullable=False, default=1)
     confirmed_at = db.Column(db.DateTime, nullable=True)
     released_at = db.Column(db.DateTime, nullable=True)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=naive_utc_now)
     updated_at = db.Column(
-        db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow
+        db.DateTime, nullable=False, default=naive_utc_now, onupdate=naive_utc_now
     )
 
 
 class ExpirySweep(db.Model):
-    __tablename__ = "expiry_sweeps"
+    __tablename__ = "cookbook_expiry_sweeps"
 
     id = db.Column(db.Integer, primary_key=True)
-    started_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    started_at = db.Column(db.DateTime, nullable=False, default=naive_utc_now)
     finished_at = db.Column(db.DateTime, nullable=True)
     status = db.Column(db.String(32), nullable=False, default="running", index=True)
     expired_count = db.Column(db.Integer, nullable=False, default=0)
